@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager & Thread Inspector Simulator</title>
+    <!-- Tailwind CSS Script -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Prompt -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                    },
+                    colors: {
+                        pastelMint: {
+                            50: '#f4fbf7',
+                            100: '#eef8f1',
+                            200: '#d5f0e1',
+                            300: '#a8e6cf',
+                            400: '#81c784',
+                            500: '#4caf50',
+                            600: '#388e3c',
+                        },
+                        pastelSky: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            400: '#38bdf8',
+                            500: '#0284c7',
+                        },
+                        pastelRose: {
+                            50: '#fff1f2',
+                            100: '#ffe4e6',
+                            200: '#fecdd3',
+                            400: '#fb7185',
+                            500: '#f43f5e',
+                        },
+                        pastelAmber: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            200: '#fde68a',
+                            400: '#fbbf24',
+                            500: '#d97706',
+                        },
+                        pastelIndigo: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #f4fbf7;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(168, 230, 207, 0.2) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(224, 242, 254, 0.25) 0px, transparent 50%);
+            background-attachment: fixed;
+            font-family: 'Prompt', sans-serif;
+        }
+
+        /* Clean Card styling with subtle soft pastel border */
+        .pastel-card {
+            background: #ffffff;
+            border: 1px solid rgba(213, 240, 225, 0.9);
+            box-shadow: 0 4px 20px -4px rgba(76, 175, 80, 0.05);
+        }
+
+        .pastel-card-hover {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .pastel-card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px -4px rgba(76, 175, 80, 0.12);
+            border-color: rgba(168, 230, 207, 1);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f4fbf7;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #a8e6cf;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #81c784;
+        }
+
+        /* Soft Pulse animation for live indicators */
+        @keyframes soft-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.92); }
+        }
+        .live-dot {
+            animation: soft-pulse 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="text-slate-700 min-h-screen pb-12 antialiased selection:bg-pastelMint-200 selection:text-pastelMint-600">
+
+    <!-- Top Fixed Header -->
+    <header class="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-pastelMint-200/70 mb-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-pastelMint-300 flex items-center justify-center text-emerald-800 font-bold shadow-sm">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-base font-bold text-slate-800 leading-tight">จำลอง Task Manager & Thread Inspector</h1>
+                    <p class="text-xs text-emerald-600 font-medium">Light & Soft Pastel Green Theme • Real-time Process Engine</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <div class="hidden sm:flex items-center space-x-2 px-3 py-1 rounded-full bg-pastelMint-50 border border-pastelMint-200 text-xs text-emerald-700 font-medium">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 live-dot"></span>
+                    <span>ระบบทำงานปกติ</span>
+                </div>
+                
+                <button onclick="openLaunchModal()" class="px-3.5 py-1.5 rounded-xl bg-pastelMint-400 hover:bg-pastelMint-500 text-white text-xs font-semibold shadow-sm transition flex items-center space-x-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    <span>เปิดแอปจำลองใหม่</span>
+                </button>
+
+                <button onclick="resetSystemProcesses()" class="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs transition" title="รีเซ็ตคืนค่าเริ่มต้น">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+
+        <!-- SECTION 1: System Overview Stat Dashboard -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <!-- CPU Card -->
+            <div class="pastel-card p-4 rounded-2xl relative overflow-hidden">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">การประมวลผล CPU</span>
+                        <h3 id="stat-cpu-text" class="text-2xl font-bold text-slate-800 mt-0.5">0.0%</h3>
+                    </div>
+                    <div class="p-2 rounded-xl bg-pastelMint-100 text-emerald-700">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden mb-2">
+                    <div id="stat-cpu-bar" class="bg-pastelMint-400 h-full transition-all duration-500 ease-out" style="width: 0%"></div>
+                </div>
+                <div class="h-6 w-full">
+                    <svg id="sparkline-cpu" class="w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 24">
+                        <path id="sparkline-cpu-path" d="" fill="none" stroke="#4caf50" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- RAM Card -->
+            <div class="pastel-card p-4 rounded-2xl relative overflow-hidden">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">หน่วยความจำ RAM</span>
+                        <h3 id="stat-ram-text" class="text-2xl font-bold text-slate-800 mt-0.5">0 MB</h3>
+                    </div>
+                    <div class="p-2 rounded-xl bg-pastelSky-100 text-pastelSky-500">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden mb-2">
+                    <div id="stat-ram-bar" class="bg-pastelSky-400 h-full transition-all duration-500 ease-out" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between items-center text-[11px] text-slate-500">
+                    <span>ความจุรวม: 16.0 GB</span>
+                    <span id="stat-ram-percent">0%</span>
+                </div>
+            </div>
+
+            <!-- Disk Activity Card -->
+            <div class="pastel-card p-4 rounded-2xl relative overflow-hidden">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">การอ่าน/เขียน ดิสก์</span>
+                        <h3 id="stat-disk-text" class="text-2xl font-bold text-slate-800 mt-0.5">0.0 MB/s</h3>
+                    </div>
+                    <div class="p-2 rounded-xl bg-pastelAmber-100 text-pastelAmber-500">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden mb-2">
+                    <div id="stat-disk-bar" class="bg-pastelAmber-400 h-full transition-all duration-500 ease-out" style="width: 15%"></div>
+                </div>
+                <div class="flex justify-between items-center text-[11px] text-slate-500">
+                    <span>NVMe SSD</span>
+                    <span id="stat-disk-status" class="text-emerald-600 font-medium">ปกติ</span>
+                </div>
+            </div>
+
+            <!-- Active Threads Count Card -->
+            <div class="pastel-card p-4 rounded-2xl relative overflow-hidden">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">จำนวน Threads ทั้งหมด</span>
+                        <h3 id="stat-threads-count" class="text-2xl font-bold text-slate-800 mt-0.5">0</h3>
+                    </div>
+                    <div class="p-2 rounded-xl bg-pastelIndigo-100 text-pastelIndigo-500">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center text-[11px] text-slate-500 pt-3 border-t border-slate-100">
+                    <span>จำนวน Process: <strong id="stat-process-count" class="text-slate-700">0</strong></span>
+                    <span>เฉลี่ย: <strong id="stat-threads-avg" class="text-slate-700">0</strong> thread/app</span>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- SECTION 2: Process Control & Filters Toolbar -->
+        <section class="pastel-card p-4 rounded-2xl flex flex-wrap gap-3 items-center justify-between">
+            <div class="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
+                <!-- Search Input -->
+                <div class="relative flex-1 min-w-[200px] max-w-md">
+                    <input type="text" id="search-input" oninput="handleFilterChange()" placeholder="ค้นหาตามชื่อแอป หรือ PID..." 
+                           class="w-full pl-9 pr-3 py-1.5 rounded-xl text-xs bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-pastelMint-300 focus:border-pastelMint-400 transition">
+                    <svg class="w-4 h-4 absolute left-3 top-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+
+                <!-- Status Filter -->
+                <select id="status-filter" onchange="handleFilterChange()" class="py-1.5 px-3 rounded-xl text-xs bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-pastelMint-300 text-slate-600">
+                    <option value="ALL">ทุกสถานะ (All Status)</option>
+                    <option value="RUNNING">กำลังทำงาน (Running)</option>
+                    <option value="HIGH_LOAD">ภาระงานสูง (High Load)</option>
+                    <option value="PAUSED">พักการทำงาน (Paused)</option>
+                </select>
+            </div>
+
+            <!-- Sorting Dropdown -->
+            <div class="flex items-center space-x-2 text-xs text-slate-500">
+                <span>เรียงตาม:</span>
+                <select id="sort-by" onchange="handleFilterChange()" class="py-1.5 px-3 rounded-xl text-xs bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-pastelMint-300 text-slate-700 font-medium">
+                    <option value="CPU_DESC">การใช้ CPU (สูง -> ต่ำ)</option>
+                    <option value="RAM_DESC">การใช้ RAM (สูง -> ต่ำ)</option>
+                    <option value="THREADS_DESC">จำนวน Threads (มาก -> น้อย)</option>
+                    <option value="PID_ASC">หมายเลข PID (น้อย -> มาก)</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- SECTION 3: Main Process Table -->
+        <section class="pastel-card rounded-2xl overflow-hidden border border-pastelMint-200/80">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50/80 border-b border-slate-100 text-slate-500 font-semibold uppercase tracking-wider">
+                            <th class="py-3 px-4">PID</th>
+                            <th class="py-3 px-4">แอปพลิเคชัน & หมวดหมู่</th>
+                            <th class="py-3 px-4">สถานะ</th>
+                            <th class="py-3 px-4">การใช้ CPU</th>
+                            <th class="py-3 px-4">หน่วยความจำ (RAM)</th>
+                            <th class="py-3 px-4 text-center">Threads</th>
+                            <th class="py-3 px-4 text-right">การจัดการ (Actions)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="process-table-body" class="divide-y divide-slate-100 bg-white">
+                        <!-- Process rows generated dynamically via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State Display -->
+            <div id="empty-state" class="hidden p-12 text-center">
+                <div class="w-12 h-12 mx-auto mb-2 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+                </div>
+                <h4 class="text-xs font-bold text-slate-700">ไม่พบโพรเซสที่ค้นหา</h4>
+                <p class="text-[11px] text-slate-400 mt-0.5">ลองเปลี่ยนคำค้นหา หรือเปิดแอปใหม่จากปุ่มเปิดแอปจำลองด้านบน</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL 1: Thread Inspector Deep Dive -->
+    <div id="thread-inspector-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-xs hidden transition-opacity duration-200 opacity-0">
+        <div class="pastel-card bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden transform transition-transform duration-200 scale-95" id="thread-modal-container">
+            
+            <!-- Modal Header -->
+            <div class="p-5 border-b border-slate-100 bg-pastelMint-50/50 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div id="modal-app-icon" class="w-10 h-10 rounded-xl bg-white text-emerald-700 flex items-center justify-center text-xl shadow-xs border border-pastelMint-200">
+                        💻
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h3 id="modal-app-name" class="text-base font-bold text-slate-800">ชื่อแอปพลิเคชัน</h3>
+                            <span id="modal-app-pid" class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[11px] font-mono">PID: 0000</span>
+                        </div>
+                        <p id="modal-app-desc" class="text-xs text-slate-500">รายละเอียดโครงสร้าง Thread ย่อยภายในแอปพลิเคชัน</p>
+                    </div>
+                </div>
+
+                <button onclick="closeThreadModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <!-- Modal Content Body -->
+            <div class="p-5 overflow-y-auto flex-1 space-y-4">
+                
+                <!-- Summary Stats Bar inside modal -->
+                <div class="grid grid-cols-3 gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                    <div>
+                        <span class="text-slate-400">สถานะหลัก:</span>
+                        <p id="modal-app-status" class="font-semibold text-slate-700 mt-0.5">-</p>
+                    </div>
+                    <div>
+                        <span class="text-slate-400">การใช้ CPU รวม:</span>
+                        <p id="modal-app-cpu" class="font-semibold text-emerald-600 mt-0.5">0.0%</p>
+                    </div>
+                    <div>
+                        <span class="text-slate-400">จำนวน Threads ย่อย:</span>
+                        <p id="modal-app-threads-count" class="font-semibold text-pastelIndigo-500 mt-0.5">0 threads</p>
+                    </div>
+                </div>
+
+                <!-- Add Thread action -->
+                <div class="flex items-center justify-between">
+                    <h4 class="text-xs font-bold text-slate-800">รายการ Thread ย่อยที่กำลังทำงาน (Threads Breakdown)</h4>
+                    <button onclick="handleAddThreadInteractive()" class="px-3 py-1 rounded-xl bg-pastelMint-400 hover:bg-pastelMint-500 text-white text-xs font-medium shadow-xs transition flex items-center space-x-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        <span>สร้าง Thread ใหม่</span>
+                    </button>
+                </div>
+
+                <!-- Threads Table -->
+                <div class="overflow-x-auto rounded-xl border border-slate-100">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100">
+                                <th class="py-2.5 px-3">TID</th>
+                                <th class="py-2.5 px-3">ชื่อ Thread และหน้าที่</th>
+                                <th class="py-2.5 px-3">Priority</th>
+                                <th class="py-2.5 px-3">CPU %</th>
+                                <th class="py-2.5 px-3">สถานะ</th>
+                                <th class="py-2.5 px-3 text-right">การจัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-threads-list" class="divide-y divide-slate-100 bg-white">
+                            <!-- Injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+            <div class="p-3 px-5 border-t border-slate-100 bg-slate-50/50 flex justify-end">
+                <button onclick="closeThreadModal()" class="px-4 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-medium transition">
+                    ปิด
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Launch App Selection Modal -->
+    <div id="launch-app-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-xs hidden transition-opacity duration-200 opacity-0">
+        <div class="pastel-card bg-white rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden transform transition-transform duration-200 scale-95" id="launch-modal-container">
+            
+            <div class="p-5 border-b border-slate-100 bg-pastelMint-50/50 flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-bold text-slate-800">เปิดจำลองแอปพลิเคชันใหม่ (Launch Process)</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">เลือกแอปพลิเคชันที่ต้องการเพื่อสร้าง Process ใหม่ในระบบ</p>
+                </div>
+                <button onclick="closeLaunchModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="p-5 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-4" id="launch-app-grid">
+                <!-- App Launcher Cards injected dynamically -->
+            </div>
+
+            <div class="p-3 px-5 border-t border-slate-100 bg-slate-50/50 flex justify-end">
+                <button onclick="closeLaunchModal()" class="px-4 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-medium transition">
+                    ยกเลิก
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <script>
+        /* ==========================================================================
+           1. Simulated Applications Catalog & Precise Thread Definitions
+           กำหนดคุณสมบัติและเธรดทั้ง 6 แอปพลิเคชันตรงตามเงื่อนไขที่กำหนด
+           ========================================================================== */
+
+        const APP_CATALOG = {
+            google_chrome: {
+                id: 'google_chrome',
+                name: 'Google Chrome',
+                category: 'เว็บเบราว์เซอร์',
+                icon: '🌐',
+                badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+                baseRam: 1420,
+                baseCpu: 9.5,
+                threads: [
+                    { name: 'Page Render Worker', detail: 'โหลดหน้าเว็บ และ Render Engine (Blink/DOM)', priority: 'High', baseCpu: 3.2 },
+                    { name: 'UI & Input Event Listener', detail: 'รับ Input จากแป้นพิมพ์ และเมาส์ Realtime', priority: 'High', baseCpu: 1.5 },
+                    { name: 'Network Fetch & HTTP Requests', detail: 'ดาวน์โหลดข้อมูล HTTP, AJAX & WebSockets', priority: 'Medium', baseCpu: 2.1 },
+                    { name: 'V8 JavaScript Execution Engine', detail: 'ประมวลผลสคริปต์ JS และ Garbage Collection', priority: 'High', baseCpu: 2.7 }
+                ]
+            },
+            minecraft: {
+                id: 'minecraft',
+                name: 'Minecraft',
+                category: 'เกม 3D',
+                icon: '⛏️',
+                badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
+                baseRam: 3850,
+                baseCpu: 26.4,
+                threads: [
+                    { name: 'Render Loop & Shader Engine', detail: 'วาดฉาก 3D (OpenGL/LWJGL) & Shaders', priority: 'Critical', baseCpu: 11.2 },
+                    { name: 'World Tick & Mob AI Logic', detail: 'คำนวณวงจร Redstone, AI มอนสเตอร์ & สภาพแวดล้อม', priority: 'High', baseCpu: 7.8 },
+                    { name: 'Chunk Generator & World Loader', detail: 'สร้างและโหลดบล็อกแมพในภูมิประเทศ', priority: 'High', baseCpu: 5.4 },
+                    { name: 'Audio & Spatial Sound Engine', detail: 'ประมวลผลเสียงสามมิติ และ FX เสียงในเกม', priority: 'Low', baseCpu: 2.0 }
+                ]
+            },
+            spotify: {
+                id: 'spotify',
+                name: 'Spotify',
+                category: 'แอปฟังเพลง',
+                icon: '🎧',
+                badgeColor: 'bg-teal-100 text-teal-800 border-teal-200',
+                baseRam: 390,
+                baseCpu: 4.2,
+                threads: [
+                    { name: 'Audio Buffer & Playback Engine', detail: 'ถอดรหัสไฟล์เสียง High Quality & Playback Buffer', priority: 'High', baseCpu: 1.5 },
+                    { name: 'UI Render Loop & Animation', detail: 'แสดงผลหน้าต่างปกอัลบั้ม และเนื้อเพลงเคลื่อนไหว', priority: 'Medium', baseCpu: 0.9 },
+                    { name: 'Network Audio Streaming Sync', detail: 'ดาวน์โหลดสตรีมเพลง Realtime และ Sync DRM', priority: 'Medium', baseCpu: 1.1 },
+                    { name: 'Local Cache & Media Manager', detail: 'จัดการแคชไฟล์เพลงออฟไลน์บนดิสก์', priority: 'Low', baseCpu: 0.7 }
+                ]
+            },
+            discord: {
+                id: 'discord',
+                name: 'Discord',
+                category: 'แอปสื่อสาร',
+                icon: '💬',
+                badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+                baseRam: 750,
+                baseCpu: 8.8,
+                threads: [
+                    { name: 'Electron UI Renderer', detail: 'ประมวลผลหน้าต่างแชท รายชื่อเพื่อน และเซิร์ฟเวอร์', priority: 'Medium', baseCpu: 2.2 },
+                    { name: 'Voice Chat Engine (WebRTC & Opus)', detail: 'ถอดรหัสไฟล์เสียง คอลกลุ่ม & ตัดเสียงรบกวน AI', priority: 'Critical', baseCpu: 3.9 },
+                    { name: 'Gateway WebSocket Realtime Sync', detail: 'ซิงค์สถานะและข้อความแชทเรียลไทม์', priority: 'Medium', baseCpu: 1.1 },
+                    { name: 'Screen Share & Overlay Hook', detail: 'จับภาพหน้าจอ แชร์สตรีมวิดีโอ & เกมโอเวอร์เลย์', priority: 'High', baseCpu: 1.6 }
+                ]
+            },
+            file_explorer: {
+                id: 'file_explorer',
+                name: 'File Explorer',
+                category: 'แอประบบ Windows',
+                icon: '📁',
+                badgeColor: 'bg-sky-100 text-sky-800 border-sky-200',
+                baseRam: 220,
+                baseCpu: 2.5,
+                threads: [
+                    { name: 'Shell UI & File Navigation Window', detail: 'แสดงผลหน้าต่างระบบ และโครงสร้างโฟลเดอร์', priority: 'High', baseCpu: 0.8 },
+                    { name: 'File Indexing & Background Search', detail: 'ดักจับ ดักค้นหาไฟล์ และการเปลี่ยนแปลงในดิสก์', priority: 'Low', baseCpu: 0.9 },
+                    { name: 'Thumbnail Generator Service', detail: 'ประมวลผลภาพตัวอย่าง Thumbnail ภาพและวิดีโอ', priority: 'Medium', baseCpu: 0.5 },
+                    { name: 'Context Menu & File I/O Handler', detail: 'จัดการเมนูคลิกขวา คัดลอก ย้ายไฟล์', priority: 'Low', baseCpu: 0.3 }
+                ]
+            },
+            photos: {
+                id: 'photos',
+                name: 'Photos',
+                category: 'ประมวลผลรูปภาพ',
+                icon: '🖼️',
+                badgeColor: 'bg-rose-100 text-rose-800 border-rose-200',
+                baseRam: 580,
+                baseCpu: 10.4,
+                threads: [
+                    { name: 'Image File RAW/JPEG Decoder', detail: 'อ่านและถอดรหัสไฟล์ภาพความละเอียดสูง', priority: 'High', baseCpu: 3.1 },
+                    { name: 'Image Filter & Color Effect Processing', detail: 'คำนวณฟิลเตอร์ ปรับแสง HDR & โทนสี', priority: 'High', baseCpu: 3.8 },
+                    { name: 'GPU Acceleration Pipeline', detail: 'ใช้การ์ดจอช่วยเร่งการประมวลผลกราฟิกภาพ', priority: 'Medium', baseCpu: 2.2 },
+                    { name: 'Viewport Zoom & Canvas Render', detail: 'ย่อ/ขยาย และวาดภาพบน Canvas แบบสมูธ', priority: 'Medium', baseCpu: 1.3 }
+                ]
+            }
+        };
+
+        /* ==========================================================================
+           2. Global System State Management
+           ========================================================================== */
+        let state = {
+            processes: [],
+            pidCounter: 1024,
+            tidCounter: 5001,
+            selectedProcessId: null,
+            filterText: '',
+            filterStatus: 'ALL',
+            sortBy: 'CPU_DESC',
+            historyCpu: Array(20).fill(0),
+            diskSpeed: 1.2
+        };
+
+        /* ==========================================================================
+           3. Initialization & Engine Lifecycle
+           ========================================================================== */
+        window.onload = function() {
+            resetSystemProcesses();
+            renderLaunchAppModalGrid();
+            
+            // Start 1-second simulation tick engine
+            setInterval(simulationTickEngine, 1000);
+        };
+
+        function resetSystemProcesses() {
+            state.processes = [];
+            state.pidCounter = 1000;
+
+            // Spawn default instances for all 6 apps
+            spawnProcess('google_chrome');
+            spawnProcess('minecraft');
+            spawnProcess('spotify');
+            spawnProcess('discord');
+            spawnProcess('file_explorer');
+            spawnProcess('photos');
+
+            showToast('คืนค่าระบบเริ่มต้นเรียบร้อยแล้ว', 'info');
+            renderAll();
+        }
+
+        function spawnProcess(appKey) {
+            const appConfig = APP_CATALOG[appKey];
+            if (!appConfig) return;
+
+            const pid = state.pidCounter++;
+
+            // Deep clone initial threads with unique TIDs
+            const threads = appConfig.threads.map(t => ({
+                tid: state.tidCounter++,
+                name: t.name,
+                detail: t.detail,
+                priority: t.priority,
+                baseCpu: t.baseCpu,
+                currentCpu: t.baseCpu,
+                status: 'RUNNING'
+            }));
+
+            const newProcess = {
+                id: 'proc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                appKey: appConfig.id,
+                name: appConfig.name,
+                category: appConfig.category,
+                icon: appConfig.icon,
+                badgeColor: appConfig.badgeColor,
+                pid: pid,
+                status: 'RUNNING',
+                ram: appConfig.baseRam,
+                baseCpu: appConfig.baseCpu,
+                currentCpu: appConfig.baseCpu,
+                threads: threads
+            };
+
+            state.processes.unshift(newProcess);
+            renderAll();
+        }
+
+        /* ==========================================================================
+           4. Realtime Tick Simulation Engine
+           ========================================================================== */
+        function simulationTickEngine() {
+            let totalCpu = 0;
+            let totalRam = 0;
+
+            state.processes.forEach(proc => {
+                if (proc.status === 'PAUSED') {
+                    proc.currentCpu = 0;
+                    proc.threads.forEach(t => {
+                        t.currentCpu = 0;
+                        t.status = 'PAUSED';
+                    });
+                } else {
+                    // Slight CPU fluctuation (jitter) for realistic behavior
+                    let procCpuSum = 0;
+                    proc.threads.forEach(t => {
+                        if (t.status !== 'PAUSED') {
+                            const variation = (Math.random() - 0.48) * 1.2;
+                            t.currentCpu = Math.max(0.1, +(t.baseCpu + variation).toFixed(1));
+                            t.status = 'RUNNING';
+                        } else {
+                            t.currentCpu = 0;
+                        }
+                        procCpuSum += t.currentCpu;
+                    });
+
+                    proc.currentCpu = +procCpuSum.toFixed(1);
+
+                    // Slight RAM jitter
+                    const ramJitter = Math.floor((Math.random() - 0.5) * 6);
+                    proc.ram = Math.max(50, proc.ram + ramJitter);
+
+                    // Mark high load if CPU > 20%
+                    if (proc.status !== 'PAUSED') {
+                        proc.status = proc.currentCpu > 20.0 ? 'HIGH_LOAD' : 'RUNNING';
+                    }
+                }
+
+                totalCpu += proc.currentCpu;
+                totalRam += proc.ram;
+            });
+
+            // Update sparkline CPU history
+            state.historyCpu.push(Math.min(100, totalCpu));
+            state.historyCpu.shift();
+
+            // Random disk speed variation
+            state.diskSpeed = +(1.0 + Math.random() * 8.5).toFixed(1);
+
+            renderDashboardMetrics(totalCpu, totalRam);
+            renderProcessTable();
+
+            // Live update modal if currently opened
+            if (state.selectedProcessId) {
+                renderModalThreadList();
+            }
+        }
+
+        /* ==========================================================================
+           5. UI Render Functions
+           ========================================================================== */
+        function renderAll() {
+            renderProcessTable();
+            renderDashboardMetrics();
+        }
+
+        function renderDashboardMetrics(totalCpuVal, totalRamVal) {
+            let cpu = totalCpuVal !== undefined ? totalCpuVal : state.processes.reduce((acc, p) => acc + p.currentCpu, 0);
+            let ram = totalRamVal !== undefined ? totalRamVal : state.processes.reduce((acc, p) => acc + p.ram, 0);
+
+            const totalThreads = state.processes.reduce((acc, p) => acc + p.threads.length, 0);
+
+            // CPU UI Update
+            document.getElementById('stat-cpu-text').innerText = cpu.toFixed(1) + '%';
+            document.getElementById('stat-cpu-bar').style.width = Math.min(100, cpu) + '%';
+            renderSparklineSvg(state.historyCpu);
+
+            // RAM UI Update (Total System RAM = 16GB = 16384 MB)
+            const ramGb = (ram / 1024).toFixed(2);
+            const ramPercent = Math.min(100, ((ram / 16384) * 100)).toFixed(1);
+            document.getElementById('stat-ram-text').innerText = ram > 1024 ? `${ramGb} GB` : `${ram} MB`;
+            document.getElementById('stat-ram-bar').style.width = ramPercent + '%';
+            document.getElementById('stat-ram-percent').innerText = `${ramPercent}%`;
+
+            // Disk UI
+            document.getElementById('stat-disk-text').innerText = `${state.diskSpeed} MB/s`;
+
+            // Threads Stats
+            document.getElementById('stat-threads-count').innerText = totalThreads;
+            document.getElementById('stat-process-count').innerText = state.processes.length;
+            const avgThreads = state.processes.length > 0 ? (totalThreads / state.processes.length).toFixed(1) : '0';
+            document.getElementById('stat-threads-avg').innerText = avgThreads;
+        }
+
+        function renderSparklineSvg(data) {
+            const svgPath = document.getElementById('sparkline-cpu-path');
+            if (!svgPath) return;
+
+            const width = 100;
+            const height = 24;
+            const step = width / (data.length - 1);
+
+            let d = '';
+            data.forEach((val, i) => {
+                const x = i * step;
+                const y = height - (Math.min(100, val) / 100) * height;
+                d += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+            });
+
+            svgPath.setAttribute('d', d);
+        }
+
+        function renderProcessTable() {
+            const tbody = document.getElementById('process-table-body');
+            const emptyState = document.getElementById('empty-state');
+
+            let filtered = state.processes.filter(p => {
+                const matchSearch = p.name.toLowerCase().includes(state.filterText.toLowerCase()) || 
+                                    p.pid.toString().includes(state.filterText);
+                const matchStatus = state.filterStatus === 'ALL' || p.status === state.filterStatus;
+                return matchSearch && matchStatus;
+            });
+
+            // Sorting
+            filtered.sort((a, b) => {
+                switch(state.sortBy) {
+                    case 'CPU_DESC': return b.currentCpu - a.currentCpu;
+                    case 'RAM_DESC': return b.ram - a.ram;
+                    case 'THREADS_DESC': return b.threads.length - a.threads.length;
+                    case 'PID_ASC': return a.pid - b.pid;
+                    default: return 0;
+                }
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            tbody.innerHTML = filtered.map(p => {
+                let statusBadge = '';
+                if (p.status === 'HIGH_LOAD') {
+                    statusBadge = `<span class="px-2 py-0.5 rounded-md bg-pastelRose-100 text-pastelRose-500 font-semibold border border-pastelRose-200 inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-pastelRose-500 live-dot"></span>ภาระงานสูง</span>`;
+                } else if (p.status === 'PAUSED') {
+                    statusBadge = `<span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 font-medium border border-slate-200">พักการทำงาน</span>`;
+                } else {
+                    statusBadge = `<span class="px-2 py-0.5 rounded-md bg-pastelMint-100 text-emerald-800 font-medium border border-pastelMint-200 inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>กำลังทำงาน</span>`;
+                }
+
+                const isPaused = p.status === 'PAUSED';
+
+                return `
+                    <tr class="hover:bg-pastelMint-50/50 transition-colors">
+                        <td class="py-3 px-4 font-mono font-semibold text-slate-500">${p.pid}</td>
+                        <td class="py-3 px-4">
+                            <div class="flex items-center space-x-2.5">
+                                <span class="text-lg p-1 rounded-lg bg-slate-100">${p.icon}</span>
+                                <div>
+                                    <div class="font-bold text-slate-800 text-xs">${p.name}</div>
+                                    <span class="text-[10px] px-1.5 py-0.2 rounded ${p.badgeColor} font-medium inline-block mt-0.5">${p.category}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4">${statusBadge}</td>
+                        <td class="py-3 px-4">
+                            <div class="w-28">
+                                <div class="flex justify-between text-[11px] mb-1 font-semibold text-slate-700">
+                                    <span>${p.currentCpu.toFixed(1)}%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                    <div class="h-full rounded-full ${p.currentCpu > 20 ? 'bg-pastelRose-400' : 'bg-pastelMint-400'}" style="width: ${Math.min(100, p.currentCpu * 3)}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4 font-medium text-slate-700">
+                            ${p.ram > 1024 ? (p.ram/1024).toFixed(2) + ' GB' : p.ram + ' MB'}
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <span class="px-2 py-0.5 rounded-md bg-slate-100 font-bold text-slate-700 border border-slate-200">
+                                ${p.threads.length} threads
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 text-right">
+                            <div class="flex items-center justify-end space-x-1.5">
+                                <button onclick="openThreadModal('${p.id}')" title="ดู Thread ย่อย" 
+                                        class="px-2 py-1 rounded-lg bg-pastelMint-100 hover:bg-pastelMint-200 text-emerald-800 transition font-medium text-xs flex items-center space-x-1">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    <span class="hidden sm:inline">ดู Threads</span>
+                                </button>
+                                
+                                <button onclick="togglePauseProcess('${p.id}')" title="${isPaused ? 'ทำงานต่อ' : 'พักการทำงาน'}" 
+                                        class="p-1 rounded-lg ${isPaused ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-pastelAmber-100 text-pastelAmber-500 hover:bg-pastelAmber-200'} transition text-xs">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        ${isPaused 
+                                            ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>' 
+                                            : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6"/>'}
+                                    </svg>
+                                </button>
+
+                                <button onclick="killProcess('${p.id}')" title="จบการทำงาน (End Task)" 
+                                        class="p-1 rounded-lg bg-pastelRose-100 hover:bg-pastelRose-200 text-pastelRose-500 transition text-xs">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function handleFilterChange() {
+            state.filterText = document.getElementById('search-input').value;
+            state.filterStatus = document.getElementById('status-filter').value;
+            state.sortBy = document.getElementById('sort-by').value;
+            renderProcessTable();
+        }
+
+        function togglePauseProcess(processId) {
+            const proc = state.processes.find(p => p.id === processId);
+            if (!proc) return;
+
+            if (proc.status === 'PAUSED') {
+                proc.status = 'RUNNING';
+                showToast(`ทำงานต่อ: ${proc.name} (PID ${proc.pid})`, 'info');
+            } else {
+                proc.status = 'PAUSED';
+                showToast(`พักการทำงาน: ${proc.name} (PID ${proc.pid})`, 'warning');
+            }
+            renderAll();
+        }
+
+        function killProcess(processId) {
+            const index = state.processes.findIndex(p => p.id === processId);
+            if (index !== -1) {
+                const killed = state.processes[index];
+                state.processes.splice(index, 1);
+                showToast(`จบการทำงาน ${killed.name} (PID ${killed.pid}) เรียบร้อย`, 'danger');
+                renderAll();
+            }
+        }
+
+        /* ==========================================================================
+           6. Thread Inspector Modal Logic
+           ========================================================================== */
+        function openThreadModal(processId) {
+            state.selectedProcessId = processId;
+            const modal = document.getElementById('thread-inspector-modal');
+            const container = document.getElementById('thread-modal-container');
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                container.classList.remove('scale-95');
+                container.classList.add('scale-100');
+            }, 10);
+
+            renderModalThreadList();
+        }
+
+        function closeThreadModal() {
+            const modal = document.getElementById('thread-inspector-modal');
+            const container = document.getElementById('thread-modal-container');
+
+            modal.classList.add('opacity-0');
+            container.classList.remove('scale-100');
+            container.classList.add('scale-95');
+
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                state.selectedProcessId = null;
+            }, 200);
+        }
+
+        function renderModalThreadList() {
+            const proc = state.processes.find(p => p.id === state.selectedProcessId);
+            if (!proc) {
+                closeThreadModal();
+                return;
+            }
+
+            document.getElementById('modal-app-icon').innerText = proc.icon;
+            document.getElementById('modal-app-name').innerText = proc.name;
+            document.getElementById('modal-app-pid').innerText = `PID: ${proc.pid}`;
+            document.getElementById('modal-app-desc').innerText = `หมวดหมู่: ${proc.category} • หน่วยความจำ: ${proc.ram} MB`;
+
+            document.getElementById('modal-app-status').innerText = proc.status === 'PAUSED' ? 'พักการทำงาน' : (proc.status === 'HIGH_LOAD' ? 'ภาระงานสูง' : 'กำลังทำงาน');
+            document.getElementById('modal-app-cpu').innerText = proc.currentCpu.toFixed(1) + '%';
+            document.getElementById('modal-app-threads-count').innerText = proc.threads.length + ' threads';
+
+            const tbody = document.getElementById('modal-threads-list');
+            tbody.innerHTML = proc.threads.map(t => {
+                let prioBadge = 'bg-slate-100 text-slate-600';
+                if (t.priority.includes('Critical')) prioBadge = 'bg-pastelRose-100 text-pastelRose-500 font-bold';
+                else if (t.priority.includes('High')) prioBadge = 'bg-pastelAmber-100 text-pastelAmber-500 font-semibold';
+
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="py-2.5 px-3 font-mono text-slate-500 font-semibold">TID-${t.tid}</td>
+                        <td class="py-2.5 px-3">
+                            <div class="font-bold text-slate-800">${t.name}</div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">${t.detail}</div>
+                        </td>
+                        <td class="py-2.5 px-3">
+                            <span class="px-2 py-0.5 rounded text-[10px] ${prioBadge}">${t.priority}</span>
+                        </td>
+                        <td class="py-2.5 px-3 font-mono font-semibold text-emerald-600">
+                            ${t.currentCpu.toFixed(1)}%
+                        </td>
+                        <td class="py-2.5 px-3">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] ${t.status === 'PAUSED' ? 'bg-slate-100 text-slate-500' : 'bg-pastelMint-100 text-emerald-800 font-medium'}">
+                                ${t.status === 'PAUSED' ? 'พักตัว' : 'ทำงาน'}
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-3 text-right">
+                            <button onclick="handleKillThread(${t.tid})" class="px-2 py-0.5 rounded bg-pastelRose-50 hover:bg-pastelRose-100 text-pastelRose-500 text-[10px] font-medium transition">
+                                ยุติ Thread
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function handleAddThreadInteractive() {
+            const proc = state.processes.find(p => p.id === state.selectedProcessId);
+            if (!proc) return;
+
+            const newTid = state.tidCounter++;
+            const helperNames = ['Background Worker Engine', 'Async Data Sync Worker', 'GPU Acceleration Helper', 'Telemetry Listener'];
+            const chosenName = helperNames[Math.floor(Math.random() * helperNames.length)];
+
+            proc.threads.push({
+                tid: newTid,
+                name: chosenName,
+                detail: 'เธรดประมวลผลย่อยที่สร้างขึ้นเพิ่มเติมเรียลไทม์',
+                priority: 'Medium',
+                baseCpu: 1.2,
+                currentCpu: 1.2,
+                status: 'RUNNING'
+            });
+
+            showToast(`สร้าง Thread ย่อย TID-${newTid} สำเร็จ`, 'success');
+            renderAll();
+            renderModalThreadList();
+        }
+
+        function handleKillThread(tid) {
+            const proc = state.processes.find(p => p.id === state.selectedProcessId);
+            if (!proc) return;
+
+            if (proc.threads.length <= 1) {
+                showToast('ไม่สามารถยุติ Thread สุดท้ายของ Process ได้', 'warning');
+                return;
+            }
+
+            proc.threads = proc.threads.filter(t => t.tid !== tid);
+            showToast(`ยุติ Thread TID-${tid} สำเร็จ`, 'info');
+            renderAll();
+            renderModalThreadList();
+        }
+
+        /* ==========================================================================
+           7. Launch Application Modal Logic
+           ========================================================================== */
+        function openLaunchModal() {
+            const modal = document.getElementById('launch-app-modal');
+            const container = document.getElementById('launch-modal-container');
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                container.classList.remove('scale-95');
+                container.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeLaunchModal() {
+            const modal = document.getElementById('launch-app-modal');
+            const container = document.getElementById('launch-modal-container');
+
+            modal.classList.add('opacity-0');
+            container.classList.remove('scale-100');
+            container.classList.add('scale-95');
+
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        function renderLaunchAppModalGrid() {
+            const container = document.getElementById('launch-app-grid');
+            container.innerHTML = Object.keys(APP_CATALOG).map(key => {
+                const app = APP_CATALOG[key];
+                return `
+                    <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-pastelMint-300 transition flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center space-x-2.5 mb-2">
+                                <span class="text-2xl">${app.icon}</span>
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-sm">${app.name}</h4>
+                                    <span class="text-[10px] px-2 py-0.2 rounded ${app.badgeColor} font-medium inline-block mt-0.5">${app.category}</span>
+                                </div>
+                            </div>
+                            <p class="text-xs text-slate-500 mb-3">หน่วยความจำเริ่มต้น: ~${app.baseRam} MB | ใช้ CPU: ~${app.baseCpu}%</p>
+                            
+                            <div class="text-[11px] text-slate-600 bg-white p-2 rounded-lg border border-slate-100 mb-3 space-y-1">
+                                <span class="font-semibold text-slate-400 block text-[10px] uppercase">โครงสร้าง Threads หลัก (4 Threads):</span>
+                                ${app.threads.map(t => `<div class="truncate">• ${t.name}</div>`).join('')}
+                            </div>
+                        </div>
+
+                        <button onclick="handleLaunchApp('${app.id}')" class="w-full py-1.5 px-3 rounded-xl bg-pastelMint-400 hover:bg-pastelMint-500 text-white font-semibold text-xs transition shadow-xs flex items-center justify-center space-x-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/></svg>
+                            <span>เปิดใช้งาน Process ใหม่</span>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function handleLaunchApp(appKey) {
+            spawnProcess(appKey);
+            const app = APP_CATALOG[appKey];
+            showToast(`เปิดจำลอง Process ใหม่: ${app.name}`, 'success');
+            closeLaunchModal();
+        }
+
+        /* ==========================================================================
+           8. Toast Notification System
+           ========================================================================== */
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            let typeStyles = 'bg-white border-slate-200 text-slate-700';
+            if (type === 'success') typeStyles = 'bg-pastelMint-50 border-pastelMint-200 text-emerald-800';
+            if (type === 'danger') typeStyles = 'bg-pastelRose-50 border-pastelRose-200 text-pastelRose-500';
+            if (type === 'warning') typeStyles = 'bg-pastelAmber-50 border-pastelAmber-200 text-pastelAmber-500';
+
+            toast.className = `p-2.5 px-4 rounded-xl shadow-lg border text-xs font-medium transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto flex items-center space-x-2 ${typeStyles}`;
+            toast.innerHTML = `<span>${message}</span>`;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
